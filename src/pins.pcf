@@ -1,0 +1,44 @@
+# Mapeamento PMOD M001 -> iCE40UP5K
+#fpga clock with 12 Mhz
+set_io clk 35
+
+set_io seg[0] 48  # Segmento a (Topo)
+set_io seg[1] 47  # Segmento b (Superior Direito)
+set_io seg[2] 3   # Segmento c (Inferior Direito)
+set_io seg[3] 2  # Segmento d (Base)
+set_io seg[4] 6  # Segmento e (Inferior Esquerdo)
+set_io seg[5] 10  # Segmento f (Superior Esquerdo)
+set_io seg[6] 9  # Segmento g (Meio)
+
+set_io digits[0] 43
+set_io digits[1] 44
+set_io digits[2] 45
+set_io digits[3] 46
+
+# input button send
+set_io button_a 25
+
+#input button reset
+set_io button_reset 23
+
+# rgb led embedded on the fpga
+set_io red 40
+set_io green 41
+set_io blue 39
+
+# output led for tests
+set_io test_button_led 42 # upper
+
+
+
+# set rx tx for the uart 
+set_io tx 26
+set_io rx 27
+
+
+# set sda and scl for the i2c ports
+set_io i2c_scl 28
+set_io i2c_sda 31
+
+
+
