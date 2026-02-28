@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 
-module i2c_master(
+module i2c_master
+(
     input wire clk, reset, start,
     input wire [6:0] slave_addr,
     input wire rw,

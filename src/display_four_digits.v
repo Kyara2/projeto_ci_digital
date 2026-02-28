@@ -1,4 +1,5 @@
-module display_four_digits (
+module display_four_digits 
+(
     input clk,
 	input reset,
 	input start_signal,

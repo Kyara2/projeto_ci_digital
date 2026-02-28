@@ -40,5 +40,9 @@ set_io rx 27
 set_io i2c_scl 28
 set_io i2c_sda 31
 
+# gpios for the ultrassonic sensor
+set_io trigger 32
+set_io echo 34
+
 
 

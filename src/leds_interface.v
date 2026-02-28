@@ -1,4 +1,5 @@
-module leds_interface (
+module leds_interface 
+(
     input wire clk,
 	input wire reset,
     input wire signal,   
@@ -13,20 +14,23 @@ module leds_interface (
     reg [STATE_BITS_SIZE-1:0] state = 4'b0111;    
     
     // LEDs começam em 1 (APAGADOS)   
-    reg led_red = 1'b1, led_green = 1'b1, led_blue = 1'b1;
-    reg test_led_reg = 1'b1;
+    reg led_red , led_green , led_blue ;
+    reg test_led_reg;
 
     always @(posedge clk or posedge reset) begin
 
 		if (reset) begin
 			state <= 3'd7;
 			test_led_reg <= 1'b1;
+
 		end
 		else if (signal == 1'b1) begin
             
             // Avança o estado
             if (state == 4'd7) state <= 4'd0;
             else state <= state + 4'd1;
+		
+			// alterna led state
             test_led_reg <= ~test_led_reg;
 
         end

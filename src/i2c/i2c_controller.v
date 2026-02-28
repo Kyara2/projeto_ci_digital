@@ -1,7 +1,9 @@
-module i2c_controller #(
+module i2c_controller 
+#(
     parameter BYTES_FROM_DATA = 2, 
     parameter BYTES_FROM_DEBUG = 15
-)(
+)
+(
     input clk, reset,
     input wire start_pulse, // Conecte ao button_a_pressed no ice_sugar.v
     input wire sda_in, output wire sda_out, output wire sda_dir,

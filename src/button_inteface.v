@@ -1,10 +1,12 @@
 `timescale 1ns / 1ps
 
-module button_interface (
+module button_interface 
+	(
     input  wire clk,
     input  wire btn_in,     // Sinal bruto do pino (Active Low)
     output reg  btn_tick    // Pulso de 1 ciclo de clock na descida
 );
+
     // Sincronização e Debounce
     reg sync_0, sync_1;
     reg btn_stable;

@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
-module hex_to_ascii (
+module hex_to_ascii 
+(
     input  wire [3:0] hex_in,
     output wire [7:0] ascii_out
 );

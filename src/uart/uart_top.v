@@ -1,6 +1,7 @@
 `timescale 1ns / 1ps
 
-module uart_top (
+module uart_top 
+(
     input  wire clk,         // 12MHz na iCESugar
     input  wire reset_n,     // Reset (Geralmente pino do botão)
     input  wire rx,          // Entrada serial
