@@ -10,11 +10,13 @@ module button_interface
 );
 
     // Sincronização e Debounce
-    reg sync_0, sync_1;
-    reg btn_stable;
-    reg [21:0] counter;
-	
-	 reg btn_stable_prev;
+   reg sync_0 = 1'b1;
+	reg sync_1 = 1'b1;
+
+	reg btn_stable = 1'b1;
+	reg btn_stable_prev = 1'b1;
+
+	reg [21:0] counter = 0;
 	
 	//localparam number_of_cycles = 21'd1_200_000;
 
