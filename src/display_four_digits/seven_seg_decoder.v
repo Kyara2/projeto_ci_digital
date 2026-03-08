@@ -6,6 +6,7 @@ module seven_seg_decoder
     output reg [6:0] seg
 );
     // Mapeamento usando seus pinos validados: [g f e d c b a]
+	// common cathode(active high) 
     always @(*) begin
         case (bin)
             4'h0: seg = 7'b0111111;
