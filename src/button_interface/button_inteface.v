@@ -1,7 +1,9 @@
 `timescale 1ns / 1ps
 
 module button_interface 
-	(
+// para clock de 12 Mhz(fpga ice sugar) em 100 ms entao 12 Mhz x 100 ms = 1_200_000 cycles
+#(parameter CYCLES_TO_DEBOUNCE = 21'd1_200_000)
+(
     input  wire clk,
     input  wire btn_in,     // Sinal bruto do pino (Active Low)
     output reg  btn_tick    // Pulso de 1 ciclo de clock na descida
@@ -12,8 +14,9 @@ module button_interface
     reg btn_stable;
     reg [21:0] counter;
 	
-	// para clock de 12 Mhz em 20 ms entao 12 Mhz x 100 ms = 1_200_000 cycles
-	localparam number_of_cycles = 21'd1_200_000;
+	 reg btn_stable_prev;
+	
+	//localparam number_of_cycles = 21'd1_200_000;
 
 	// evita metaestabilidade
     always @(posedge clk) begin
@@ -27,7 +30,7 @@ module button_interface
             counter <= 0;
         end else begin
             counter <= counter + 1'b1;
-            if (counter == number_of_cycles) begin
+            if (counter == CYCLES_TO_DEBOUNCE-1) begin
                 btn_stable <= sync_1;
                 counter <= 0;
             end
@@ -35,8 +38,6 @@ module button_interface
     end
 
     // 2. Detector de Borda (DENTRO do módulo)
-    reg btn_stable_prev;
-    
     always @(posedge clk) begin
         btn_stable_prev <= btn_stable;
         // Gera o tick quando o botão estável cai de 1 para 0

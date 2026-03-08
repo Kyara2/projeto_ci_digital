@@ -26,6 +26,8 @@ module controlador_ultrassonico
     // =========================
     localparam TRIG_CICLOS = 120;      // 10 µs @ 12 MHz
     localparam ESPERA = 3_000_000; // 250 ms
+	localparam CICLOS_POR_CM = 696;
+
 	
     // =========================
     // Registradores
@@ -65,22 +67,24 @@ module controlador_ultrassonico
             // ======================
 
             if (echo_rise) begin
-                contador_echo <= 0;
+                contador_echo <= 1;
                 medindo <= 1;
             end
 
-            if (medindo)
+            else if (medindo)
                 contador_echo <= contador_echo + 1;
 
-            if (echo_fall) begin
+            if (echo_fall && medindo) begin
                 valor_pulso <= contador_echo;
                 medindo <= 0;
+				contador_echo <= 0;
+
             end
 
         end
     end
 
     assign echo_counter_debug = valor_pulso;
-	assign distance_cm = valor_pulso/696;
-
+	assign distance_cm = valor_pulso / CICLOS_POR_CM;
+	
 endmodule

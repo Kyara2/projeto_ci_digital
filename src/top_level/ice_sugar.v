@@ -191,7 +191,6 @@ module ice_sugar
     );
 	
 	// convert a value in ascii to hex to being used for other modules(ex.: presented in the display)
-	
 	//wire [DEBUG_NUM_BYTES*8-1:0] value_in_ascii_test;
 	//assign value_in_ascii_test = 32'h31_32_33_34;
 	translate_ascii_to_hex #(.NUM_BYTES(DEBUG_NUM_BYTES)) translate_to_hex (
@@ -201,6 +200,7 @@ module ice_sugar
 	);
 	
 	//cpu risc-v
+	
 	cpu_riscv #(
 		    .ENABLE_DEBUG(ENABLE_DEBUG),
 			.INSTRUCTION_MEMORY_DEPTH(CPU_INSTRUCTION_MEMORY_DEPTH),
