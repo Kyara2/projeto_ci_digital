@@ -9,8 +9,9 @@ SRC_FOLDER = src
 
 
 # Busca todos os .v em src recursivamente
-#SRC = $(shell find $(SRC_FOLDER) -type f -name "*.v" ! -path "*/i2c/*" ! -name "*tb*" ! -name "*tf*")
-SRC = $(shell find $(SRC_FOLDER) -type f -name "*.v"  ! -name "*tb*" ! -name "*tf*")
+#SRC = $(shell find $(SRC_FOLDER) -type f -name "*.v" ! -path "*/cpu/*" ! -path "*/i2c/*" ! -path "*/uart/*" ! -name "*tb*" ! -name "*tf*")
+SRC = $(shell find $(SRC_FOLDER) -type f -name "*.v" ! -path "*/cpu/*" ! -path "*/i2c/*" ! -name "*tb*" ! -name "*tf*")
+#SRC = $(shell find $(SRC_FOLDER) -type f -name "*.v"  ! -name "*tb*" ! -name "*tf*")
 
 TESTBENCH = $(SRC_FOLDER)/$(PROJ)_tf.v
 PCF       = $(SRC_FOLDER)/pins.pcf
@@ -36,22 +37,23 @@ BROWSER   = google-chrome
 # ==============================================================================
 
 # Default target
-all: check syn prn bit prog
+all: check syn prn bit prog 
 
 check:
+	clear
 	@mkdir -p $(TARGET_FOLDER)
 
 # --- 1. SIMULATION (Waveform) ---
 sim:
 	iverilog -o $(SIM_OUT) $(SRC) $(TESTBENCH)
-	vvp $(SIM_OUT)
+	vvp $(SIM_OUT) 2>&1 | tee $(TARGET_FOLDER)/simulation_log.txt 
 	gtkwave $(VCD)
 
 # --- 2. SYNTHESIS ---
 # O comando agora é um só. Ele carrega $(SRC) (todos os arquivos) e sintetiza o topo.
 syn: $(SRC)
 
-	yosys -p "synth_ice40 -top $(PROJ) -json $(JSON)" $(SRC)
+	yosys -p "synth_ice40 -top $(PROJ) -json $(JSON)" $(SRC) 2>&1 | tee $(TARGET_FOLDER)/yosys_log.txt 
 
 
 # --- 3. VIEW RTL SCHEMATIC ---
@@ -66,11 +68,11 @@ rtl: $(SRC)
 
 # --- 4. PLACE AND ROUTE ---
 prn: $(JSON) $(PCF)
-	nextpnr-ice40 --$(DEVICE) --package $(PACKAGE) --json $(JSON) --pcf $(PCF) --asc $(ASC)
+	nextpnr-ice40 --$(DEVICE) --package $(PACKAGE) --json $(JSON) --pcf $(PCF) --asc $(ASC) 2>&1 | tee $(TARGET_FOLDER)/nextpnr_log.txt 
 
 # --- 5. BITSTREAM GENERATION ---
 bit: $(ASC)
-	icepack $(ASC) $(BIN)
+	icepack $(ASC) $(BIN) 2>&1 | tee $(TARGET_FOLDER)/bitstream_log.txt 
 
 # --- 6. PROGRAMMING ---
 prog: bit

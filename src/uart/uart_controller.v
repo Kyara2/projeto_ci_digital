@@ -1,6 +1,11 @@
 module uart_controller #(
-    parameter BYTES = 2
-)(
+	// numero de bytes utilizado
+    parameter BYTES = 2,
+    // Parametros para o divisor de clock
+    parameter CLK_FREQ = 12_000_000, // Frequencia do clock principal (12 MHz)
+    parameter BAUD_RATE = 9_600     // Baud rate desejada de 9600
+)
+(
     input  wire clk,
     input  wire reset_n,
     
@@ -27,7 +32,12 @@ module uart_controller #(
     wire       uart_tx_busy;
 
     // --- INSTÂNCIA DA UART ---
-    uart_top uart_inst (
+	uart_full_duplex 
+		#(
+		.CLK_FREQ(CLK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
+	)
+	uart_inst (
         .clk(clk),
         .reset_n(reset_n),
         .tx(tx),

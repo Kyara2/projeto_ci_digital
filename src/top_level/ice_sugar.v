@@ -4,7 +4,10 @@ module ice_sugar
 	#(
 	parameter ENABLE_DEBUG = 1,
 	parameter CPU_INSTRUCTION_MEMORY_DEPTH = 32,
-	parameter CPU_DATA_MEMORY_DEPTH=32
+	parameter CPU_DATA_MEMORY_DEPTH=32,
+	// Parametros para o divisor de clock do UART
+    parameter CLK_FREQ = 12_000_000, // Frequencia do clock principal (12 MHz)
+    parameter BAUD_RATE = 9_600     // Baud rate desejada de 9600
 	)
 	(
 	// input gpios  ------------
@@ -75,7 +78,10 @@ module ice_sugar
 	assign register_data_debug_address = 5'b0_0011;
 		
     //assign debug_bits = 64'h01_23_45_67_89_AB_CD_EF; // for testing only
-	assign debug_bits = echo_counter_debug[15:0]; //data_from_sensor[SENSOR_NUM_BYTES*8-1:0];
+	
+	
+	assign debug_bits = data_from_sensor[SENSOR_NUM_BYTES*8-1:0];
+	
 	//assign debug_bits = data_converted_to_hex;
 	//assign debug_bits = data_from_sensor;
 
@@ -138,20 +144,24 @@ module ice_sugar
 			.digits(digits)
 		);
 	
+	
 	// instancia do controlador do sensor ultrasonico HC-SR04
 	controlador_ultrassonico ultrassonico (
 		.clk(clk),              // Clock de 12MHz
 		.reset(button_reset_pressed), 
 		.trigger(trigger),      
 		.echo(echo),              
-		.distance_cm(data_from_sensor),
-		.echo_counter_debug(echo_counter_debug)
+		.distance_cm(data_from_sensor)
+		//.echo_counter_debug(echo_counter_debug[21:0])
 	);
-			
+	
+	
 	// instancia do controlador de uart
 	uart_controller #(
-		.BYTES(UART_TX_NUM_BYTES)
-		//.UART_RX_BYTE_SIZE(UART_RX_BYTE_SIZE)
+		.BYTES(UART_TX_NUM_BYTES),
+		// Parametros para o divisor de clock
+		.CLK_FREQ(CLK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
 		)
 		
 		uart_controller_main (
@@ -166,8 +176,9 @@ module ice_sugar
         .rx(rx),
         .tx(tx)
     );
+
     
-	
+	/*
 	// Instancia o seu controlador que gerencia o Master e o Sensor
 	i2c_controller #(
 		.BYTES_FROM_DATA(SENSOR_NUM_BYTES),
@@ -182,6 +193,7 @@ module ice_sugar
 		//.debug_bits(debug_bits),
 		//.sensor_data(data_from_sensor)
 	);
+	*/
 	
 	// data from uart putty terminal in ascii converted to hexadecimal values
 	translate_hex_to_ascii #(.NUM_BYTES(DEBUG_NUM_BYTES)) 
@@ -199,8 +211,8 @@ module ice_sugar
 		.data_out(data_converted_to_hex)
 	);
 	
+	/*
 	//cpu risc-v
-	
 	cpu_riscv #(
 		    .ENABLE_DEBUG(ENABLE_DEBUG),
 			.INSTRUCTION_MEMORY_DEPTH(CPU_INSTRUCTION_MEMORY_DEPTH),
@@ -214,6 +226,7 @@ module ice_sugar
 		.register_data_debug_address(register_data_debug_address),
 		.register_data_debug(register_data_debug)
 	);
+	*/
 	
 // end of the module
 endmodule

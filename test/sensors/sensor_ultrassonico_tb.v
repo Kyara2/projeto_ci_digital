@@ -8,8 +8,8 @@ module controlador_ultrassonico_tb;
     reg echo;
 
     wire trigger;
-    wire [31:0] distance_cm;
-    wire [31:0] echo_counter_debug;
+    wire [15:0] distance_cm;
+    //wire [31:0] echo_counter_debug;
 
     // ==========================
     // Parâmetros
@@ -27,8 +27,8 @@ module controlador_ultrassonico_tb;
         .reset(reset),
         .trigger(trigger),
 		 .echo(echo),
-        .distance_cm(distance_cm),
-        .echo_counter_debug(echo_counter_debug)
+        .distance_cm(distance_cm)
+       // .echo_counter_debug(echo_counter_debug)
     );
 
     // ==========================
@@ -93,12 +93,12 @@ module controlador_ultrassonico_tb;
 
 			if (distance_cm == distancia_cm) begin
 				$display("PASSOU -> distancia medida = %0d cm", distance_cm);
-				$display("echo_counter = %0d", echo_counter_debug);
+				//$display("echo_counter = %0d", echo_counter_debug);
 			end
 			else begin
 				$display("ERRO -> esperado %0d cm, medido %0d cm",
 						 distancia_cm, distance_cm);
-				$display("echo_counter = %0d", echo_counter_debug);
+				//$display("echo_counter = %0d", echo_counter_debug);
 			end
 
 			repeat(200) @(posedge clk);

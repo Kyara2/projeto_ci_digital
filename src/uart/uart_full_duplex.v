@@ -1,6 +1,11 @@
 `timescale 1ns / 1ps
 
-module uart_top 
+module uart_full_duplex
+#(
+    // Parametros para o divisor de clock
+    parameter CLK_FREQ = 12_000_000, // Frequencia do clock principal (12 MHz)
+    parameter BAUD_RATE = 9_600    // Baud rate desejada de 9600
+)
 (
     input  wire clk,         // 12MHz na iCESugar
     input  wire reset_n,     // Reset (Geralmente pino do botão)
@@ -27,7 +32,12 @@ module uart_top
     end
 
     // Instância do Receptor (Recebe do mundo externo)
-    uart_rx receiver (
+    uart_receiver
+	#(
+		.CLK_FREQ(CLK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
+	)
+	receiver (
         .clk(clk),
         .reset(reset),
         .rx(rx_sync_2),
@@ -36,7 +46,12 @@ module uart_top
     );
 
     // Instância do Transmissor (Envia para o mundo externo)
-    uart_tx transmitter (
+	uart_transmitter
+	#(
+		.CLK_FREQ(CLK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
+	)
+	transmitter (
         .clk(clk),
         .reset(reset),
         .data_in(data_to_send),

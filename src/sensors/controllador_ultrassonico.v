@@ -7,8 +7,8 @@ module controlador_ultrassonico
     input  wire        echo,
 
     output reg         trigger,
-	output [31:0] distance_cm,
-    output wire [31:0] echo_counter_debug
+	output [15:0] distance_cm
+    //output wire [21:0] echo_counter_debug
 );
 
     // =========================
@@ -32,9 +32,12 @@ module controlador_ultrassonico
     // =========================
     // Registradores
     // =========================
-    reg [31:0] contador_geral = 0;
-    reg [31:0] contador_echo  = 0;
-    reg [31:0] valor_pulso    = 0;
+    reg [21:0] contador_geral = 0;
+    reg [21:0] contador_echo  = 0;
+    //reg [21:0] valor_pulso    = 0;
+	
+	reg [15:0] distance = 0;
+	reg [15:0] distance_after_echo = 0;
 
     reg medindo = 0;
 
@@ -44,8 +47,10 @@ module controlador_ultrassonico
             trigger        <= 0;
             contador_geral <= 0;
             contador_echo  <= 0;
-            valor_pulso    <= 0;
+            //valor_pulso    <= 0;
             medindo        <= 0;
+			
+			distance <= 0;
         end
         else begin
 
@@ -69,13 +74,27 @@ module controlador_ultrassonico
             if (echo_rise) begin
                 contador_echo <= 1;
                 medindo <= 1;
+				
+				// zera distania
+				distance <= 0;
+				
             end
 
-            else if (medindo)
-                contador_echo <= contador_echo + 1;
+            else if (medindo) begin
+                //contador_echo <= contador_echo + 1;
+				
+				 if (contador_echo == CICLOS_POR_CM-1) begin
+					contador_echo <= 0;
+					distance <= distance + 1;
+				end
+				else begin
+					contador_echo <= contador_echo + 1;
+				end
+			end
 
             if (echo_fall && medindo) begin
-                valor_pulso <= contador_echo;
+                //valor_pulso <= contador_echo;
+				distance_after_echo <=  distance;
                 medindo <= 0;
 				contador_echo <= 0;
 
@@ -84,7 +103,7 @@ module controlador_ultrassonico
         end
     end
 
-    assign echo_counter_debug = valor_pulso;
-	assign distance_cm = valor_pulso / CICLOS_POR_CM;
-	
+    //assign echo_counter_debug = valor_pulso;
+	//assign distance_cm = valor_pulso / CICLOS_POR_CM;
+	assign distance_cm = distance_after_echo;
 endmodule
