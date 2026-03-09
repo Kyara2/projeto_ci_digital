@@ -5,14 +5,13 @@ module uart_transmitter_tb;
 reg clk;
 reg clk_enable;
 reg reset;
-
-reg [7:0] data_in;
 reg tx_start;
+reg [7:0] data_in;
 
 wire tx;
 wire tx_done;
 
-integer errors = 0;
+integer errors;
 
 
 // ==========================
@@ -21,8 +20,11 @@ integer errors = 0;
 
 localparam CLK_PERIOD = 83;
 
-localparam CLK_FREQ = 12_000_000;
+localparam CLK_FREQ  = 12_000_000;
 localparam BAUD_RATE = 9600;
+
+localparam CLK_PER_BIT  = CLK_FREQ / BAUD_RATE;
+localparam UART_TIMEOUT = 20 * CLK_PER_BIT;
 
 
 // ==========================
@@ -34,33 +36,37 @@ uart_transmitter
     .CLK_FREQ(CLK_FREQ),
     .BAUD_RATE(BAUD_RATE)
 )
-dut
-(
+dut (
     .clk(clk),
     .reset(reset),
-    .data_in(data_in),
     .tx_start(tx_start),
+    .data_in(data_in),
     .tx(tx),
     .tx_done(tx_done)
 );
 
 
 // ==========================
-// Clock controlado
+// Clock
 // ==========================
 
 initial begin
     clk = 0;
     clk_enable = 1;
+    errors = 0;
 end
 
 always begin
-    if (clk_enable)
+    if(clk_enable)
         #(CLK_PERIOD/2) clk = ~clk;
     else
         @(posedge clk_enable);
 end
 
+
+// ==========================
+// Reset
+// ==========================
 
 task do_reset;
 begin
@@ -71,36 +77,82 @@ end
 endtask
 
 
-task send_byte(input [7:0] byte);
+// ==========================
+// Captura UART
+// ==========================
 
-integer timeout;
+task capture_uart_byte;
+output [7:0] byte;
+
+integer i;
+reg [7:0] temp;
 
 begin
 
-    @(posedge clk);
-    data_in = byte;
-    tx_start = 1;
+    temp = 8'h00;
 
-    @(posedge clk);
-    tx_start = 0;
+    wait(tx == 0); // start bit
 
-    timeout = 0;
+    repeat(CLK_PER_BIT/2) @(posedge clk);
 
-    while(!tx_done && timeout < 20000) begin
-        @(posedge clk);
-        timeout = timeout + 1;
+    for(i = 0; i < 8; i = i + 1) begin
+        repeat(CLK_PER_BIT) @(posedge clk);
+        temp[i] = tx;
     end
 
-    if(timeout == 20000) begin
-        $display("ERRO: timeout TX");
-        errors = errors + 1;
-    end
-    else
-        $display("PASS: TX enviou %h", byte);
+    repeat(CLK_PER_BIT) @(posedge clk); // stop
+
+    byte = temp;
 
 end
 endtask
 
+
+// ==========================
+// Teste
+// ==========================
+
+task run_test;
+input [7:0] byte;
+
+reg [7:0] received;
+integer timeout;
+
+begin
+
+    data_in = byte;
+
+    tx_start = 1;
+    @(posedge clk);
+    tx_start = 0;
+
+    capture_uart_byte(received);
+
+    timeout = 0;
+
+    while(!tx_done && timeout < UART_TIMEOUT) begin
+        @(posedge clk);
+        timeout = timeout + 1;
+    end
+
+    if(timeout == UART_TIMEOUT) begin
+        $display("ERRO: timeout TX");
+        errors = errors + 1;
+    end
+    else if(received == byte)
+        $display("PASS: TX enviou %h", byte);
+    else begin
+        $display("ERRO: esperado %h recebido %h", byte, received);
+        errors = errors + 1;
+    end
+
+end
+endtask
+
+
+// ==========================
+// Execução
+// ==========================
 
 initial begin
 
@@ -108,21 +160,19 @@ initial begin
 
     reset = 0;
     tx_start = 0;
-    data_in = 0;
 
     do_reset();
 
-    send_byte(8'h55);
-    send_byte(8'hAA);
-    send_byte(8'hF0);
+    run_test(8'h55);
+    run_test(8'hA3);
+    run_test(8'hF0);
 
     if(errors == 0)
         $display("RESULTADO FINAL: PASSOU");
     else
         $display("RESULTADO FINAL: %d ERROS", errors);
 
-	clk_enable = 0;
-
+    clk_enable = 0;
 end
 
 endmodule

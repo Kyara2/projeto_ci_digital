@@ -163,7 +163,7 @@ initial begin
         $display("RESULTADO FINAL: %d ERROS", errors);
 
 	clk_enable = 0;
-	$stop;
+	
 end
 
 endmodule
