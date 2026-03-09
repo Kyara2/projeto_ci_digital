@@ -1,4 +1,5 @@
-module uart_controller #(
+module uart_controller 
+#(
 	// numero de bytes utilizado
     parameter BYTES = 2,
     // Parametros para o divisor de clock

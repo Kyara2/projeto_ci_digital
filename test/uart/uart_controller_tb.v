@@ -3,7 +3,8 @@
 module uart_controller_tb;
 
 reg clk;
-reg reset_n;
+reg clk_enable;
+reg reset;
 
 reg [15:0] data_to_send;
 reg start_tx;
@@ -19,11 +20,26 @@ assign rx = tx;
 
 integer errors = 0;
 
-uart_controller #(
+
+// ==========================
+// Parâmetros
+// ==========================
+
+localparam CLK_PERIOD = 83;
+
+
+// ==========================
+// DUT
+// ==========================
+
+uart_controller
+#(
     .BYTES(2)
-) dut (
+)
+dut
+(
     .clk(clk),
-    .reset_n(reset_n),
+    .reset(reset),
     .data_to_send(data_to_send),
     .start_tx(start_tx),
     .data_received(data_received),
@@ -34,21 +50,36 @@ uart_controller #(
 );
 
 
-// clock
-always #41 clk = ~clk;
+// ==========================
+// Clock
+// ==========================
+
+initial begin
+    clk = 0;
+    clk_enable = 1;
+end
+
+always begin
+    if(clk_enable)
+        #(CLK_PERIOD/2) clk = ~clk;
+    else
+        @(posedge clk_enable);
+end
 
 
-// reset
 task do_reset;
 begin
-    reset_n = 0;
+    reset = 1;
     repeat(5) @(posedge clk);
-    reset_n = 1;
+    reset = 0;
 end
 endtask
 
 
 task run_test(input [15:0] word);
+
+integer timeout;
+
 begin
 
     @(posedge clk);
@@ -58,9 +89,18 @@ begin
     @(posedge clk);
     start_tx = 0;
 
-    wait(rx_done_tick);
+    timeout = 0;
 
-    if(data_received == word)
+    while(!rx_done_tick && timeout < 100000) begin
+        @(posedge clk);
+        timeout = timeout + 1;
+    end
+
+    if(timeout == 100000) begin
+        $display("ERRO: timeout controller");
+        errors = errors + 1;
+    end
+    else if(data_received == word)
         $display("PASS: Controller %h", word);
     else begin
         $display("ERRO: esperado %h recebido %h", word, data_received);
@@ -75,8 +115,7 @@ initial begin
 
     $display("==== TESTE UART CONTROLLER ====");
 
-    clk = 0;
-    reset_n = 0;
+    reset = 0;
     start_tx = 0;
 
     do_reset();
@@ -90,7 +129,7 @@ initial begin
     else
         $display("RESULTADO FINAL: %d ERROS", errors);
 
-    $finish;
+		clk_enable = 0;
 
 end
 

@@ -79,9 +79,9 @@ module ice_sugar
 		
     //assign debug_bits = 64'h01_23_45_67_89_AB_CD_EF; // for testing only
 	
-	assign debug_bits = data_from_sensor[SENSOR_NUM_BYTES*8-1:0];
+	//assign debug_bits = data_from_sensor[SENSOR_NUM_BYTES*8-1:0];
 	
-	//assign debug_bits = data_converted_to_hex;
+	assign debug_bits = data_converted_to_hex;
 	//assign debug_bits = data_from_sensor;
 
 	// Monta o frame: N caracteres de debug + \r\n(new line)
@@ -106,6 +106,82 @@ module ice_sugar
 	assign scl_in = i2c_scl;
 	assign sda_in = i2c_sda;
 	
+
+	
+	// instancia do controlador de uart
+	uart_controller 
+		#(
+		.BYTES(UART_TX_NUM_BYTES),
+		// Parametros para o divisor de clock
+		.CLK_FREQ(CLK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
+		)		
+		uart_controller_module 
+		( 
+        .clk(clk),
+        .reset(reset),
+		.data_to_send(frame_to_uart),
+        //.start_tx(button_start_pressed),
+		.start_tx(button_start_pressed),
+        .data_received(frame_from_uart),
+        .rx_done_tick(rx_ready),
+        .tx_busy_total(tx_busy_total_signal),
+        .rx(rx),
+        .tx(tx)
+    );
+
+    
+	/*
+	// Instancia o seu controlador que gerencia o Master e o Sensor
+	i2c_controller #(
+		.BYTES_FROM_DATA(SENSOR_NUM_BYTES),
+		.BYTES_FROM_DEBUG(SENSOR_NUM_BYTES)
+	) user_app (
+		.clk(clk),
+		.reset(reset), 
+		.start_pulse(button_start_pressed), 
+		.sda_in(sda_in), .scl_in(scl_in),
+		.sda_out(sda_out), .scl_out(scl_out),
+		.sda_dir(sda_dir), .scl_dir(scl_dir) //,
+		//.debug_bits(debug_bits),
+		//.sensor_data(data_from_sensor)
+	);
+	*/
+	
+	// data from uart putty terminal in ascii converted to hexadecimal values
+	translate_hex_to_ascii #(.NUM_BYTES(DEBUG_NUM_BYTES)) 
+		translate_to_ascii (
+		.data_in(debug_bits),
+		.ascii_out(data_converted_to_ascii)
+    );
+	
+	// convert a value in ascii to hex to being used for other modules(ex.: presented in the display)
+	//wire [DEBUG_NUM_BYTES*8-1:0] value_in_ascii_test;
+	//assign value_in_ascii_test = 32'h31_32_33_34;
+	translate_ascii_to_hex #(.NUM_BYTES(DEBUG_NUM_BYTES)) translate_to_hex (
+		//.ascii_in(value_in_ascii_test),
+		.ascii_in(frame_from_uart),
+		.data_out(data_converted_to_hex)
+	);
+	
+	/*
+	//cpu risc-v
+	cpu_riscv #(
+		    .ENABLE_DEBUG(ENABLE_DEBUG),
+			.INSTRUCTION_MEMORY_DEPTH(CPU_INSTRUCTION_MEMORY_DEPTH),
+			.DATA_MEMORY_DEPTH(CPU_DATA_MEMORY_DEPTH)
+		  ) 
+			
+		cpu  (
+		.clk(clk),
+		.reset(reset),
+		
+		.register_data_debug_address(register_data_debug_address),
+		.register_data_debug(register_data_debug)
+	);
+	*/
+	
+
     // Instância para Reset (gera um pulso de reset)
     button_interface button_reset_modulo
 	(
@@ -165,79 +241,6 @@ module ice_sugar
 		//.echo_counter_debug(echo_counter_debug[21:0])
 	);
 	
-	
-	// instancia do controlador de uart
-	uart_controller 
-		#(
-		.BYTES(UART_TX_NUM_BYTES),
-		// Parametros para o divisor de clock
-		.CLK_FREQ(CLK_FREQ),
-		.BAUD_RATE(BAUD_RATE)
-		)		
-		uart_controller_module 
-		( 
-        .clk(clk),
-        .reset(reset),
-		.data_to_send(frame_to_uart),
-        //.start_tx(button_start_pressed),
-		.start_tx(1'b1),
-        .data_received(frame_from_uart),
-        .rx_done_tick(rx_ready),
-        .tx_busy_total(tx_busy_total_signal),
-        .rx(rx),
-        .tx(tx)
-    );
-
-    
-	/*
-	// Instancia o seu controlador que gerencia o Master e o Sensor
-	i2c_controller #(
-		.BYTES_FROM_DATA(SENSOR_NUM_BYTES),
-		.BYTES_FROM_DEBUG(SENSOR_NUM_BYTES)
-	) user_app (
-		.clk(clk),
-		.reset(reset), 
-		.start_pulse(button_start_pressed), 
-		.sda_in(sda_in), .scl_in(scl_in),
-		.sda_out(sda_out), .scl_out(scl_out),
-		.sda_dir(sda_dir), .scl_dir(scl_dir) //,
-		//.debug_bits(debug_bits),
-		//.sensor_data(data_from_sensor)
-	);
-	*/
-	
-	// data from uart putty terminal in ascii converted to hexadecimal values
-	translate_hex_to_ascii #(.NUM_BYTES(DEBUG_NUM_BYTES)) 
-		translate_to_ascii (
-		.data_in(debug_bits),
-		.ascii_out(data_converted_to_ascii)
-    );
-	
-	// convert a value in ascii to hex to being used for other modules(ex.: presented in the display)
-	//wire [DEBUG_NUM_BYTES*8-1:0] value_in_ascii_test;
-	//assign value_in_ascii_test = 32'h31_32_33_34;
-	translate_ascii_to_hex #(.NUM_BYTES(DEBUG_NUM_BYTES)) translate_to_hex (
-		//.ascii_in(value_in_ascii_test),
-		.ascii_in(frame_from_uart),
-		.data_out(data_converted_to_hex)
-	);
-	
-	/*
-	//cpu risc-v
-	cpu_riscv #(
-		    .ENABLE_DEBUG(ENABLE_DEBUG),
-			.INSTRUCTION_MEMORY_DEPTH(CPU_INSTRUCTION_MEMORY_DEPTH),
-			.DATA_MEMORY_DEPTH(CPU_DATA_MEMORY_DEPTH)
-		  ) 
-			
-		cpu  (
-		.clk(clk),
-		.reset(reset),
-		
-		.register_data_debug_address(register_data_debug_address),
-		.register_data_debug(register_data_debug)
-	);
-	*/
 	
 // end of the module
 endmodule

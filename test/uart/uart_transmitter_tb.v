@@ -1,9 +1,11 @@
 `timescale 1ns/1ps
 
-module uart_tx_tb;
+module uart_transmitter_tb;
 
 reg clk;
+reg clk_enable;
 reg reset;
+
 reg [7:0] data_in;
 reg tx_start;
 
@@ -12,8 +14,28 @@ wire tx_done;
 
 integer errors = 0;
 
+
+// ==========================
+// Parâmetros
+// ==========================
+
+localparam CLK_PERIOD = 83;
+
+localparam CLK_FREQ = 12_000_000;
+localparam BAUD_RATE = 9600;
+
+
+// ==========================
 // DUT
-uart_tx dut (
+// ==========================
+
+uart_transmitter
+#(
+    .CLK_FREQ(CLK_FREQ),
+    .BAUD_RATE(BAUD_RATE)
+)
+dut
+(
     .clk(clk),
     .reset(reset),
     .data_in(data_in),
@@ -22,11 +44,24 @@ uart_tx dut (
     .tx_done(tx_done)
 );
 
-// Clock 12 MHz (≈83ns)
-always #41 clk = ~clk;
+
+// ==========================
+// Clock controlado
+// ==========================
+
+initial begin
+    clk = 0;
+    clk_enable = 1;
+end
+
+always begin
+    if (clk_enable)
+        #(CLK_PERIOD/2) clk = ~clk;
+    else
+        @(posedge clk_enable);
+end
 
 
-// TASK: reset
 task do_reset;
 begin
     reset = 1;
@@ -36,9 +71,12 @@ end
 endtask
 
 
-// TASK: transmitir byte
 task send_byte(input [7:0] byte);
+
+integer timeout;
+
 begin
+
     @(posedge clk);
     data_in = byte;
     tx_start = 1;
@@ -46,25 +84,28 @@ begin
     @(posedge clk);
     tx_start = 0;
 
-    wait(tx_done);
+    timeout = 0;
 
-    @(posedge clk);
+    while(!tx_done && timeout < 20000) begin
+        @(posedge clk);
+        timeout = timeout + 1;
+    end
 
-    if(tx_done)
-        $display("PASS: TX completou envio do byte %h", byte);
-    else begin
-        $display("ERRO: TX nao completou envio");
+    if(timeout == 20000) begin
+        $display("ERRO: timeout TX");
         errors = errors + 1;
     end
+    else
+        $display("PASS: TX enviou %h", byte);
+
 end
 endtask
 
 
 initial begin
 
-    $display("==== TESTE UART TX ====");
+    $display("==== TESTE UART TRANSMITTER ====");
 
-    clk = 0;
     reset = 0;
     tx_start = 0;
     data_in = 0;
@@ -80,7 +121,7 @@ initial begin
     else
         $display("RESULTADO FINAL: %d ERROS", errors);
 
-    $finish;
+	clk_enable = 0;
 
 end
 

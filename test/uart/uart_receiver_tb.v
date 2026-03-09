@@ -1,8 +1,9 @@
 `timescale 1ns/1ps
 
-module uart_rx_tb;
+module uart_receiver_tb;
 
 reg clk;
+reg clk_enable;
 reg reset;
 reg rx;
 
@@ -11,7 +12,32 @@ wire rx_done;
 
 integer errors = 0;
 
-uart_rx dut (
+
+// ==========================
+// Parâmetros
+// ==========================
+
+localparam CLK_PERIOD = 83;
+
+localparam CLK_FREQ  = 12_000_000;
+localparam BAUD_RATE = 9600;
+
+localparam CLK_PER_BIT = CLK_FREQ / BAUD_RATE;
+localparam UART_TIMEOUT = 20 * CLK_PER_BIT;
+
+
+
+// ==========================
+// DUT
+// ==========================
+
+uart_receiver
+#(
+    .CLK_FREQ(CLK_FREQ),
+    .BAUD_RATE(BAUD_RATE)
+)
+dut
+(
     .clk(clk),
     .reset(reset),
     .rx(rx),
@@ -20,11 +46,27 @@ uart_rx dut (
 );
 
 
-// clock 12MHz
-always #41 clk = ~clk;
+// ==========================
+// Clock controlado
+// ==========================
+
+initial begin
+    clk = 0;
+    clk_enable = 1;
+end
+
+always begin
+    if (clk_enable)
+        #(CLK_PERIOD/2) clk = ~clk;
+    else
+        @(posedge clk_enable);
+end
 
 
-// reset
+// ==========================
+// Reset
+// ==========================
+
 task do_reset;
 begin
     reset = 1;
@@ -34,43 +76,67 @@ end
 endtask
 
 
-// Envia byte pela linha RX
+// ==========================
+// Envia byte UART
+// ==========================
+
 task send_uart_byte(input [7:0] byte);
+
 integer i;
+
 begin
 
+    // idle
     rx = 1;
     repeat(10) @(posedge clk);
 
     // start bit
     rx = 0;
-    repeat(1250) @(posedge clk);
+    repeat(CLK_PER_BIT) @(posedge clk);
 
-    // dados
-    for(i=0;i<8;i=i+1) begin
+    // envia dados LSB first
+    for(i = 0; i < 8; i = i + 1) begin
         rx = byte[i];
-        repeat(1250) @(posedge clk);
+        repeat(CLK_PER_BIT) @(posedge clk);
     end
 
     // stop bit
     rx = 1;
-    repeat(1250) @(posedge clk);
+    repeat(CLK_PER_BIT) @(posedge clk);
 
 end
+
 endtask
 
 
+
+// ==========================
+// Teste
+// ==========================
+
 task run_test(input [7:0] byte);
+
+integer timeout;
+
 begin
 
     send_uart_byte(byte);
 
-    wait(rx_done);
+    timeout = 0;
 
-    if(data_out == byte)
+    while(!rx_done && timeout < UART_TIMEOUT) begin
+        @(posedge clk);
+        timeout = timeout + 1;
+    end
+
+    if(timeout == UART_TIMEOUT) begin
+        $display("ERRO: timeout RX (byte=%h data_out=%h)", byte, data_out);
+        errors = errors + 1;
+    end
+    else if(data_out == byte)
         $display("PASS: RX recebeu %h", byte);
     else begin
-        $display("ERRO: RX esperado %h recebido %h", byte, data_out);
+        $display("ERRO: esperado %h recebido %h", byte, data_out);
         errors = errors + 1;
     end
 
@@ -80,9 +146,8 @@ endtask
 
 initial begin
 
-    $display("==== TESTE UART RX ====");
+    $display("==== TESTE UART RECEIVER ====");
 
-    clk = 0;
     rx = 1;
     reset = 0;
 
@@ -97,8 +162,8 @@ initial begin
     else
         $display("RESULTADO FINAL: %d ERROS", errors);
 
-    $finish;
-
+	clk_enable = 0;
+	$stop;
 end
 
 endmodule

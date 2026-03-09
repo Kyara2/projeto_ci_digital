@@ -1,9 +1,10 @@
 `timescale 1ns/1ps
 
-module uart_top_tb;
+module uart_full_duplex_tb;
 
 reg clk;
-reg reset_n;
+reg clk_enable;
+reg reset;
 
 reg [7:0] data_to_send;
 reg tx_start_tick;
@@ -15,13 +16,25 @@ wire tx_busy;
 wire tx;
 wire rx;
 
-assign rx = tx; // loopback
+assign rx = tx;
 
 integer errors = 0;
 
-uart_top dut (
+
+// ==========================
+// Parâmetros
+// ==========================
+
+localparam CLK_PERIOD = 83;
+
+
+// ==========================
+// DUT
+// ==========================
+
+uart_full_duplex dut (
     .clk(clk),
-    .reset_n(reset_n),
+    .reset(reset),
     .rx(rx),
     .tx(tx),
     .data_received(data_received),
@@ -32,21 +45,36 @@ uart_top dut (
 );
 
 
-// clock
-always #41 clk = ~clk;
+// ==========================
+// Clock
+// ==========================
+
+initial begin
+    clk = 0;
+    clk_enable = 1;
+end
+
+always begin
+    if(clk_enable)
+        #(CLK_PERIOD/2) clk = ~clk;
+    else
+        @(posedge clk_enable);
+end
 
 
-// reset
 task do_reset;
 begin
-    reset_n = 0;
+    reset = 1;
     repeat(5) @(posedge clk);
-    reset_n = 1;
+    reset = 0;
 end
 endtask
 
 
 task run_test(input [7:0] byte);
+
+integer timeout;
+
 begin
 
     @(posedge clk);
@@ -56,9 +84,18 @@ begin
     @(posedge clk);
     tx_start_tick = 0;
 
-    wait(rx_ready_tick);
+    timeout = 0;
 
-    if(data_received == byte)
+    while(!rx_ready_tick && timeout < 50000) begin
+        @(posedge clk);
+        timeout = timeout + 1;
+    end
+
+    if(timeout == 50000) begin
+        $display("ERRO: timeout full duplex");
+        errors = errors + 1;
+    end
+    else if(data_received == byte)
         $display("PASS: Loopback %h", byte);
     else begin
         $display("ERRO: esperado %h recebido %h", byte, data_received);
@@ -71,10 +108,9 @@ endtask
 
 initial begin
 
-    $display("==== TESTE UART TOP ====");
+    $display("==== TESTE UART FULL DUPLEX ====");
 
-    clk = 0;
-    reset_n = 0;
+    reset = 0;
     tx_start_tick = 0;
 
     do_reset();
@@ -88,7 +124,7 @@ initial begin
     else
         $display("RESULTADO FINAL: %d ERROS", errors);
 
-    $finish;
+	clk_enable = 0;
 
 end
 
