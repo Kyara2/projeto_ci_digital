@@ -7,7 +7,7 @@ module uart_controller #(
 )
 (
     input  wire clk,
-    input  wire reset_n,
+    input  wire reset,
     
     // Interface com a Aplicação (ice_sugar)
     input  wire [ (BYTES*8)-1 : 0 ] data_to_send,
@@ -39,7 +39,7 @@ module uart_controller #(
 	)
 	uart_inst (
         .clk(clk),
-        .reset_n(reset_n),
+        .reset(reset),
         .tx(tx),
         .rx(rx),
         .data_received(uart_rx_data),
@@ -60,8 +60,8 @@ module uart_controller #(
 
     assign tx_busy_total = (tx_state != TX_IDLE);
 
-    always @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
+    always @(posedge clk) begin
+        if (reset) begin
             tx_state <= TX_IDLE;
             uart_tx_start <= 0;
             tx_byte_ptr <= 0;
@@ -100,8 +100,8 @@ module uart_controller #(
     // --- LÓGICA DE RECEPÇÃO (RX) ---
     reg [CNT_WIDTH:0] rx_byte_ptr;
 
-    always @(posedge clk or negedge reset_n) begin
-        if (!reset_n) begin
+    always @(posedge clk) begin
+        if (reset) begin
             data_received <= 0;
             rx_byte_ptr <= 0;
             rx_done_tick <= 0;

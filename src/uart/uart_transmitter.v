@@ -30,7 +30,7 @@ module uart_transmitter
 	reg tx_reg;
 	 
 	// Contagem dos ciclos de clock
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             clk_counter <= 16'b0;
         end else if (enable_counter) begin
@@ -43,7 +43,7 @@ module uart_transmitter
     end
 	 
     // Registrador de deslocamento
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             shift_reg <= 8'b0;
 			tx_reg <= 0;
@@ -56,7 +56,7 @@ module uart_transmitter
     end
 	 
     // Logica sequencial: Transicao de estado
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             state <= IDLE;
         end else begin
@@ -105,7 +105,7 @@ module uart_transmitter
     end
 	
 	// Logica combinacional para determinar a saida e sinais de controle interno
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             // Reset de todos os sinais
             tx_done <= 0;

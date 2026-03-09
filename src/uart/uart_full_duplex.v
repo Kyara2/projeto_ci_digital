@@ -8,7 +8,7 @@ module uart_full_duplex
 )
 (
     input  wire clk,         // 12MHz na iCESugar
-    input  wire reset_n,     // Reset (Geralmente pino do botão)
+    input  wire reset,     // Reset (Geralmente pino do botão)
     input  wire rx,          // Entrada serial
     output wire tx,          // Saída serial
     
@@ -20,7 +20,6 @@ module uart_full_duplex
     output wire tx_busy              // Indica que o transmissor está ocupado
 );
 
-    wire reset = !reset_n;
     wire tx_done_internal;
     assign tx_busy = !tx_done_internal;
 

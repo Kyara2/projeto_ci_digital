@@ -31,7 +31,7 @@ module uart_receiver
 	reg load_data;
 	 
 	// Contagem dos ciclos de clock
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             clk_counter <= 16'b0;
         end else if (enable_counter) begin
@@ -44,7 +44,7 @@ module uart_receiver
     end
 	 
     // Registrador de deslocamento
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             shift_reg <= 8'b0;
 			data_out <= 8'b0;
@@ -56,7 +56,7 @@ module uart_receiver
     end
 	 
     // Logica sequencial: Transicao de estado
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             state <= IDLE;
         end else begin
@@ -113,7 +113,7 @@ module uart_receiver
     end
 
     // Logica sequencial: Amostragem dos dados
-    always @(posedge clk or posedge reset) begin
+    always @(posedge clk) begin
         if (reset) begin
             // Reset de todos os sinais
             rx_done <= 0;

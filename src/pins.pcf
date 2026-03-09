@@ -16,7 +16,7 @@ set_io digits[2] 45
 set_io digits[3] 46
 
 # input button send
-set_io button_a 25
+set_io button_start 25
 
 #input button reset
 set_io button_reset 23

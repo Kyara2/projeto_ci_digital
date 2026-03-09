@@ -15,7 +15,7 @@ module ice_sugar
 	
 	// buttons
     input  wire button_reset, 
-    input  wire button_a,
+    input  wire button_start,
 	
 	// receive uart
     input  wire rx,
@@ -49,7 +49,7 @@ module ice_sugar
 	localparam SENSOR_NUM_BYTES = 2; //  2<<3 = 2 * 8 = 16 bits
 
     wire button_reset_pressed;
-    wire button_a_pressed;	
+    wire button_start_pressed;	
 	
 	wire [15:0] distance_in_cm;
 	wire [31:0] echo_counter_debug;
@@ -79,7 +79,6 @@ module ice_sugar
 		
     //assign debug_bits = 64'h01_23_45_67_89_AB_CD_EF; // for testing only
 	
-	
 	assign debug_bits = data_from_sensor[SENSOR_NUM_BYTES*8-1:0];
 	
 	//assign debug_bits = data_converted_to_hex;
@@ -108,24 +107,35 @@ module ice_sugar
 	assign sda_in = i2c_sda;
 	
     // Instância para Reset (gera um pulso de reset)
-    button_interface btn_reset (
+    button_interface button_reset_modulo
+	(
         .clk(clk),
         .btn_in(button_reset),
         .btn_tick(button_reset_pressed)
     );
+	
+	// sincroniza o reset garantindo reset sincrono seguro
+	reset_synchronizer safe_reset 
+	(
+		.clk(clk),
+		.button_reset_pressed(button_reset_pressed),
+		.reset(reset)
+	);
 
     // Instância para Send (gera um pulso para enviar)
-    button_interface btn_a (
+    button_interface button_start_modulo
+	(
         .clk(clk),
-        .btn_in(button_a),
-        .btn_tick(button_a_pressed)
+        .btn_in(button_start),
+        .btn_tick(button_start_pressed)
     );
 	
 	// leds
-	leds_interface leds (
+	leds_interface leds 
+	(
 		.clk(clk),
-		.reset(button_reset_pressed),
-		.signal(button_a_pressed),
+		.reset(reset),
+		.signal(button_start_pressed),
 		.red(red),
 		.green(green),
 		.blue(blue),
@@ -135,8 +145,8 @@ module ice_sugar
 	// instancia do display de 4 digitos de 7 segmentos cada
 	display_four_digits display_inst (
 			.clk(clk),
-			.reset(button_reset_pressed),
-			//.start_signal(button_a_pressed),
+			.reset(reset),
+			//.start_signal(button_start_pressed),
 			.start_signal(1'b1),
 			//.input_value(display_value), // Mostra os 2 bytes acumulados
 			.input_value(display_value),
@@ -148,7 +158,7 @@ module ice_sugar
 	// instancia do controlador do sensor ultrasonico HC-SR04
 	controlador_ultrassonico ultrassonico (
 		.clk(clk),              // Clock de 12MHz
-		.reset(button_reset_pressed), 
+		.reset(reset), 
 		.trigger(trigger),      
 		.echo(echo),              
 		.distance_cm(data_from_sensor)
@@ -157,18 +167,19 @@ module ice_sugar
 	
 	
 	// instancia do controlador de uart
-	uart_controller #(
+	uart_controller 
+		#(
 		.BYTES(UART_TX_NUM_BYTES),
 		// Parametros para o divisor de clock
 		.CLK_FREQ(CLK_FREQ),
 		.BAUD_RATE(BAUD_RATE)
-		)
-		
-		uart_controller_main (
+		)		
+		uart_controller_module 
+		( 
         .clk(clk),
-        .reset_n(!button_reset_pressed),
+        .reset(reset),
 		.data_to_send(frame_to_uart),
-        //.start_tx(button_a_pressed),
+        //.start_tx(button_start_pressed),
 		.start_tx(1'b1),
         .data_received(frame_from_uart),
         .rx_done_tick(rx_ready),
@@ -185,8 +196,8 @@ module ice_sugar
 		.BYTES_FROM_DEBUG(SENSOR_NUM_BYTES)
 	) user_app (
 		.clk(clk),
-		.reset(button_reset_pressed), 
-		.start_pulse(button_a_pressed), 
+		.reset(reset), 
+		.start_pulse(button_start_pressed), 
 		.sda_in(sda_in), .scl_in(scl_in),
 		.sda_out(sda_out), .scl_out(scl_out),
 		.sda_dir(sda_dir), .scl_dir(scl_dir) //,
@@ -221,7 +232,7 @@ module ice_sugar
 			
 		cpu  (
 		.clk(clk),
-		.reset(button_reset_pressed),
+		.reset(reset),
 		
 		.register_data_debug_address(register_data_debug_address),
 		.register_data_debug(register_data_debug)
